@@ -3,7 +3,6 @@ from enum import Enum, auto
 from typing import Optional
 from uuid import uuid4
 from decimal import *
-from bets import Roll
 from player import *
 
 # constants
