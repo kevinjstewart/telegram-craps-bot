@@ -46,7 +46,7 @@ class CrapsGame:
     def place_bet(self, bet: Bet):
         player = self.player_store.players[bet.player_id]
         if player.balance < bet.amount:
-            raise CrapsError(f'Insufficient funds, you only have ${player.balance}.')
+            raise CrapsError(f'Insufficient funds, you only have ${player.balance:.2f}.')
 
         self.player_store.players[bet.player_id].balance -= bet.amount
         self.staged_bets.add(bet)

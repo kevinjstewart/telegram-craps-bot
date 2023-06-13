@@ -1,4 +1,5 @@
 import os
+from posixpath import split
 import random
 from unicodedata import decimal
 import telebot
@@ -120,6 +121,26 @@ def make_place_number_bet(message):
     except Exception as e:
         bot.reply_to(message, str(e))
 
+@bot.message_handler(commands=['horn', 'hornbet'])
+def make_horn_bet(message):
+    player_store.register_player_from_message(message)
+
+    split_message = message.text.split()
+
+    if len(split_message) == 2 and split_message[1].isdecimal():
+        amount = Decimal(split_message[1])
+    else:
+        bot.reply_to(message, 'Not a valid bet. Use /horn [number].')
+        return
+    player_id = message.from_user.id
+    bet = HornBet(player_id=player_id, amount=amount)
+
+    try:
+        game.place_bet(bet)
+        bot.reply_to(message, f'✔️ {player_store.players[player_id].name} just made a ${bet.amount:.2f} horn bet 📯‼️.')
+    except Exception as e:
+        bot.reply_to(message, str(e))
+
 @bot.message_handler(commands=['bets', 'list', 'listbets'])
 def list_bets(message):
     player_store.register_player_from_message(message)
@@ -151,7 +172,7 @@ def deposit_money(message):
     try:
         player_store.deposit(message.from_user.id, amount)
         player = player_store.players[message.from_user.id]
-        bot.reply_to(message, f'🏧 Deposited ${amount:.2f} into bankroll.\nYour balance is now ${player.balance}. Your bankroll is ${player.bankroll}.')
+        bot.reply_to(message, f'🏧 Deposited ${amount:.2f} into bankroll.\nYour balance is now ${player.balance:.2f}. Your bankroll is ${player.bankroll}.')
     except Exception as e:
         bot.reply_to(message, f'🚫 Error: {e.message}')
 
@@ -166,7 +187,7 @@ def withdraw_money(message):
     try:
         player_store.withdraw(message.from_user.id, amount)
         player = player_store.players[message.from_user.id]
-        bot.reply_to(message, f'🏧 Withdrew ${amount:.2f} from bankroll.\nYour balance is now ${player.balance}. Your bankroll is ${player.bankroll:.2f}.')
+        bot.reply_to(message, f'🏧 Withdrew ${amount:.2f} from bankroll.\nYour balance is now ${player.balance:.2f}. Your bankroll is ${player.bankroll:.2f}.')
     except Exception as e:
         bot.reply_to(message, f'🚫 Error: {e.message}')
 
