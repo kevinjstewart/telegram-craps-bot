@@ -125,7 +125,7 @@ def make_place_number_bet(message):
 def make_come_bet(message):
     player_store.register_player_from_message(message)
 
-    if game.point is not None:
+    if game.point is None:
         bot.reply_to(message, '🚫 Can\'t make a come bet when the point isn\'t set. Just make a pass line bet.')
         return
 
