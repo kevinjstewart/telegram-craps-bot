@@ -22,7 +22,7 @@ class PlayerStore:
         if player_id not in self.players:
             raise CrapsError('Player does not exist.')
         if self.players[player_id].balance >= Decimal(5.0):
-            raise CrapsError('Player is not eligible to withdraw money. Minimum balance to withdraw is $5.')
+            raise CrapsError(f'Player is not eligible to withdraw money.\nMinimum balance to withdraw is $5 and you have ${self.players[player_id].balance:.2f}.')
         else:
             self.players[player_id].bankroll -= amount
             self.players[player_id].balance += amount

@@ -107,7 +107,7 @@ class PassLineBet(Bet):
 class ComeBet(Bet):
     def __init__(self, player_id: int, amount: Decimal, point_number: Optional[int] = None):
         super().__init__(player_id=player_id, amount=amount, is_contract_bet=True)
-        if point_number not in POINT_NUMBERS:
+        if point_number is not None and point_number not in POINT_NUMBERS:
             raise ValueError
         self.point_number = point_number
     
