@@ -15,7 +15,6 @@ class CrapsGame:
         self.bets = set()
         self.staged_bets = set()
         self.point = None
-        # todo: add shooter streak
     
     def roll(self, player_id: int, injected_roll: Optional[Roll] = None) -> RollResult:
         # roll staged bets into real bets
@@ -68,6 +67,3 @@ class CrapsGame:
         
         self.bets = remaining_bets
         return RollResult(roll=roll, winning_bets=paid_out_bets, losing_bets=removed_bets, point=point)
-    
-
-        
