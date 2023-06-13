@@ -3,6 +3,7 @@ from enum import Enum, auto
 from typing import Optional
 from uuid import uuid4
 from decimal import *
+from bets import Roll
 from player import *
 
 # constants
@@ -51,8 +52,6 @@ class Bet:
         return self.id == other.id
 
 class PlaceBet(Bet):
-
-    # constructor
     def __init__(self, player_id: int, roll_number: int, amount: Decimal):
         super().__init__(player_id=player_id, amount=amount, is_contract_bet=False)
         if roll_number not in POINT_NUMBERS:
@@ -66,7 +65,7 @@ class PlaceBet(Bet):
         elif roll_number in [5, 9]:
             return Decimal(7) / Decimal(5)
         elif roll_number in [6, 8]:
-            return Decimal(5) / Decimal(6)
+            return Decimal(7) / Decimal(6)
     
     def get_outcome(self, roll: Roll, point: Optional[int]) -> BetOutcome:
         if point is None:
@@ -83,8 +82,6 @@ class PlaceBet(Bet):
         return f'{self.roll_number} place'
 
 class PassLineBet(Bet):
-
-    # constructor
     def __init__(self, player_id: int, amount: Decimal):
         super().__init__(player_id=player_id, amount=amount, is_contract_bet=True)
     
@@ -109,8 +106,6 @@ class PassLineBet(Bet):
         return "pass line"
 
 class ComeBet(Bet):
-    
-    # constructor
     def __init__(self, player_id: int, amount: Decimal, point_number: Optional[int] = None):
         super().__init__(player_id=player_id, amount=amount, is_contract_bet=True)
         if point_number not in POINT_NUMBERS:
@@ -135,15 +130,11 @@ class ComeBet(Bet):
                 return BetOutcome(BetOutcomeState.KEEP)
     
     def display_name(self) -> str:
-        return "come"
+        return f'come' if self.point_number is None else f'{self.point_number} come'
 
 class FieldBet(Bet):
-
-    def __init__(self, player_id: int, amount: Decimal, point_number: Optional[int] = None):
+    def __init__(self, player_id: int, amount: Decimal):
         super().__init__(player_id=player_id, amount=amount, is_contract_bet=True)
-        if point_number not in POINT_NUMBERS:
-            raise ValueError
-        self.point_number = point_number
     
     def get_outcome(self, roll: Roll, point: Optional[int]) -> BetOutcome:
         if point is None:
@@ -155,7 +146,6 @@ class FieldBet(Bet):
         else:
             return BetOutcome(BetOutcomeState.REMOVE)
     
-
     def display_name(self) -> str:
         return "field"
 
