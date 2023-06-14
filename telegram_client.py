@@ -11,7 +11,7 @@ import atexit
 import pickle
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
-SAVE_FILE_NAME = 'saved_game_1.pk'
+SAVE_FILE_NAME = 'saved_game_june_14.pk'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -22,28 +22,42 @@ def rolled(message):
     result = game.roll(message.from_user.id)
     response = f'🎲🎲 Rolled {result.roll.sum} ({result.roll.first_side}, {result.roll.second_side}).'
 
-    if result.losing_bets or result.winning_bets:
-        response += '\n'
-        for bet in result.losing_bets:
-            player_name = player_store.players[bet.player_id].name
-            response += f'\n💥 {player_name} lost ${bet.amount:.2f} on a {bet.display_name()} bet.'
-        for bet in result.winning_bets:
-            player_name = player_store.players[bet.player_id].name
-            response += f'\n🤑 {player_name} made ${bet.get_outcome(result.roll, point=old_point).payout:.2f} on a {bet.display_name()} bet.'
-    
-    response += '\n'
+    modified_player_ids = set[int]()
+    if result.losing_bets or result.winning_bets or result.updated_come_bets:
+        response += "\n"
 
+    for bet in result.losing_bets:
+        player_name = player_store.players[bet.player_id].name
+        response += f'\n💥 {player_name} lost ${bet.amount:.2f} on a {bet.display_name()} bet.'
+        modified_player_ids.add(bet.player_id)
+    for bet in result.winning_bets:
+        player_name = player_store.players[bet.player_id].name
+        response += f'\n🤑 {player_name} made ${bet.get_outcome(result.roll, point=old_point).payout:.2f} on a {bet.display_name()} bet.'
+        modified_player_ids.add(bet.player_id)
+    for come_bet in result.updated_come_bets:
+        player_name = player_store.players[come_bet.player_id].name
+        response += f'\n❗️ _{player_name}\'s ${come_bet.amount:.2f} come bet\'s point number is now {come_bet.point_number}._'
+        modified_player_ids.add(come_bet.player_id)
+    
+    response += "\n"
+    
+    if modified_player_ids:
+        response += "\n"
+        for modified_player_id in modified_player_ids:
+            player = player_store.players[modified_player_id]
+            response += f'👤 {player.name} now has ${player.balance:.2f}.\n'
+    
     if old_point == game.point:
         if old_point is None:
-            response += 'Point was not set.'
+            response += '\n🎯 Point was not set.'
         else:
-            response += f'\nPoint is still {game.point}.'
+            response += f'\n🎯 Point is still *{game.point}*.'
     elif game.point is None:
-        response += '\nPoint has been cleared.'
+        response += '\n🎯 *Point has been cleared.*'
     else:
-        response += f'\nPoint is now {game.point}.'
+        response += f'\n🎯 Point is now *{game.point}*.'
 
-    bot.reply_to(message, response)
+    bot.reply_to(message, response, parse_mode='markdown')
 
 @bot.message_handler(commands=['point'])
 def get_point(message):
@@ -76,6 +90,20 @@ def get_bankrolls(message):
     for player in player_store.players.values():
         response += f'\n👤 {player.name} has a ${player.bankroll:.2f} balance in their bankroll.'
 
+    bot.reply_to(message, response)
+
+@bot.message_handler(commands=['board', 'table', 'status'])
+def get_table(message):
+    response = ""
+    for player in player_store.players.values():
+        response += f'\n👤 {player.name} has ${player.balance:.2f} in their hand.'
+    
+    if _get_placed_bets_str() or _get_staged_bets_str():
+        response += "\n"
+    response += _get_staged_bets_str()
+    response += _get_placed_bets_str()
+    response += '\n\n'
+    response += 'No point set.' if game.get_point() is None else f'Point set to {game.get_point()}.'
     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['passline'])
@@ -191,13 +219,8 @@ def list_bets(message):
     
     response = ""
 
-    for bet in game.staged_bets:
-        player_name = player_store.players[bet.player_id].name
-        response += f'\n✍🏻 | ${bet.amount:.2f} {bet.display_name()} bet by {player_name}'
-    
-    for bet in game.bets:
-        player_name = player_store.players[bet.player_id].name
-        response += f'\n{"🔐" if bet.is_contract_bet else "🔓"} | ${bet.amount:.2f} {bet.display_name()} bet by {player_name}'
+    response += _get_staged_bets_str()
+    response += _get_placed_bets_str()
     
     bot.reply_to(message, response)
 
@@ -230,6 +253,20 @@ def withdraw_money(message):
         bot.reply_to(message, f'🏧 Withdrew ${amount:.2f} from bankroll.\nYour balance is now ${player.balance:.2f}. Your bankroll is ${player.bankroll:.2f}.')
     except Exception as e:
         bot.reply_to(message, f'🚫 Error: {e.message}')
+
+def _get_staged_bets_str() -> str:
+    response = ""
+    for bet in game.staged_bets:
+        player_name = player_store.players[bet.player_id].name
+        response += f'\n✍🏻 | ${bet.amount:.2f} {bet.display_name()} bet by {player_name}'
+    return response
+
+def _get_placed_bets_str() -> str:
+    response = ""
+    for bet in game.bets:
+        player_name = player_store.players[bet.player_id].name
+        response += f'\n{"🔐" if bet.is_contract_bet else "🔓"} | ${bet.amount:.2f} {bet.display_name()} bet by {player_name}'
+    return response
 
 def exit_handler():
     file = open(SAVE_FILE_NAME, 'wb')

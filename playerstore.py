@@ -21,11 +21,14 @@ class PlayerStore:
     def withdraw(self, player_id: int, amount: Decimal):
         if player_id not in self.players:
             raise CrapsError('Player does not exist.')
-        if self.players[player_id].balance >= Decimal(5.0):
-            raise CrapsError(f'Player is not eligible to withdraw money.\nMinimum balance to withdraw is $5 and you have ${self.players[player_id].balance:.2f}.')
-        else:
-            self.players[player_id].bankroll -= amount
-            self.players[player_id].balance += amount
+        player = self.players[player_id]
+        if player.bankroll < amount:
+            if player.balance > Decimal(15.0):
+                raise CrapsError(f'{player.name} is not eligible to withdraw money, you need to have less than $15 in your hand to take out a loan.\n{player.name}\'s current balance is ${player.balance} and bankroll is ${player.bankroll:.2f}.')
+            elif amount > Decimal(50.0):
+                raise CrapsError(f'{player.name} is not eligible to withdraw money, the bank will only give you a loan up to $50.\n{player.name}\'s current bankroll is ${player.bankroll:.2f}.')
+        player.bankroll -= amount
+        player.balance += amount
     
     def deposit(self, player_id: int, amount: Decimal):
         if player_id not in self.players:

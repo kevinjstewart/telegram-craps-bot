@@ -1,13 +1,15 @@
 import random
+from copy import deepcopy
 from bets import *
 from playerstore import *
 from error import CrapsError
 
 class RollResult:
-    def __init__(self, roll: Roll, winning_bets: list[Bet], losing_bets: list[Bet], point: Optional[int]):
+    def __init__(self, roll: Roll, winning_bets: list[Bet], losing_bets: list[Bet], point: Optional[int], updated_come_bets: list[ComeBet] = []):
         self.roll = roll
         self.winning_bets = winning_bets
         self.losing_bets = losing_bets
+        self.updated_come_bets = updated_come_bets
 
 class CrapsGame:
     def __init__(self, player_store: PlayerStore) -> None:
@@ -55,7 +57,9 @@ class CrapsGame:
         paid_out_bets = list[Bet]()
         removed_bets = list[Bet]()
         remaining_bets = set[Bet]()
+        updated_come_bets = list[ComeBet]()
         for bet in self.bets:
+            old_bet = deepcopy(bet)
             outcome = bet.get_outcome(roll=roll, point=point)
             if outcome.state == BetOutcomeState.PAY and outcome.payout is not None:
                 self.player_store.players[bet.player_id].balance += outcome.payout
@@ -64,6 +68,8 @@ class CrapsGame:
                 removed_bets.append(bet)
             else:
                 remaining_bets.add(bet)
-        
+                # check for updated come bets
+                if isinstance(bet, ComeBet) and old_bet.point_number != bet.point_number:
+                    updated_come_bets.append(deepcopy(bet))
         self.bets = remaining_bets
-        return RollResult(roll=roll, winning_bets=paid_out_bets, losing_bets=removed_bets, point=point)
+        return RollResult(roll=roll, winning_bets=paid_out_bets, losing_bets=removed_bets, point=point, updated_come_bets=updated_come_bets)
